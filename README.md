@@ -32,8 +32,9 @@ stream on `localhost`, so on a static host it's simply absent rather than retryi
 
 - **drag** — grab the predator nearest your finger and steer it. A white ring marks the one
   you're driving. Release and it goes back to hunting the nearest prey on its own.
-- **☰** — prey count, **predator count (1–6)**, force weights, motion trails, force-vector
-  overlay.
+- **☰** — prey count, **predator count (1–6)**, force weights, pixel size, motion trails,
+  force-vector overlay. Every value can be **dragged or typed** — the number box and the
+  slider are two views of the same value and clamp to the same bounds.
 
 Works with a mouse or a finger. It starts deliberately small — **12 prey, 1 predator** — and
 the prey slider runs from 1 to 500 if you want a proper swarm. The layout adapts, and
@@ -42,6 +43,17 @@ floor, so on a ~440dp phone they stay legible instead of shrinking to 4px specks
 
 With more than one predator, prey fear **sums** across all of them, so a prey pinched between
 two hunters is pushed hardest out of the gap.
+
+## Look
+
+The palette is sampled from pixel-art references: a high-key blue-grey fog for the field,
+desaturated slate for the prey, and the sea-green of lit windows for the predator. The scene
+renders into a small offscreen buffer and is blown up with image smoothing off, which is what
+produces the chunky pixel edges — `pixel size` in the panel is the block size in CSS px, and
+setting it to 1 turns pixelation off entirely and renders crisp.
+
+Catching a prey leaves a brief ring at the point of capture — constant radius, alpha only, no
+size change — and the replacement prey eases in over 0.28s rather than popping into place.
 
 ## How it works
 

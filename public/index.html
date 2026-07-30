@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#08090d">
+<meta name="theme-color" content="#e0e5ed">
 <meta name="description" content="A flock of prey, one hunter, five forces. An interactive boids simulation.">
 <title>catchWhat — a flock and a hunter</title>
 <link rel="stylesheet" href="/style.css">
@@ -30,32 +30,34 @@
 
   <fieldset>
     <legend>flock</legend>
-    <label>prey <output data-for="preyCount"></output>
+    <label>prey <input class="num" type="number" data-num="preyCount" min="1" max="500" step="1" value="12" aria-label="preyCount value">
       <input type="range" id="preyCount" min="1" max="500" step="1" value="12"></label>
-    <label>cohesion <output data-for="cohesion"></output>
-      <input type="range" id="cohesion" min="0" max="200" step="1" value="60"></label>
-    <label>separation <output data-for="separation"></output>
-      <input type="range" id="separation" min="0" max="300" step="1" value="120"></label>
-    <label>alignment <output data-for="alignment"></output>
-      <input type="range" id="alignment" min="0" max="200" step="1" value="80"></label>
+    <label>cohesion <input class="num" type="number" data-num="cohesion" min="0" max="200" step="1" value="95" aria-label="cohesion value">
+      <input type="range" id="cohesion" min="0" max="200" step="1" value="95"></label>
+    <label>separation <input class="num" type="number" data-num="separation" min="0" max="300" step="1" value="130" aria-label="separation value">
+      <input type="range" id="separation" min="0" max="300" step="1" value="130"></label>
+    <label>alignment <input class="num" type="number" data-num="alignment" min="0" max="200" step="1" value="115" aria-label="alignment value">
+      <input type="range" id="alignment" min="0" max="200" step="1" value="115"></label>
   </fieldset>
 
   <fieldset>
     <legend>predators</legend>
-    <label>count <output data-for="hunterCount"></output>
+    <label>count <input class="num" type="number" data-num="hunterCount" min="1" max="6" step="1" value="1" aria-label="hunterCount value">
       <input type="range" id="hunterCount" min="1" max="6" step="1" value="1"></label>
-    <label>fear <output data-for="fear"></output>
+    <label>fear <input class="num" type="number" data-num="fear" min="0" max="400" step="1" value="220" aria-label="fear value">
       <input type="range" id="fear" min="0" max="400" step="1" value="220"></label>
-    <label>fear radius <output data-for="fearRadius"></output>
+    <label>fear radius <input class="num" type="number" data-num="fearRadius" min="20" max="400" step="5" value="170" aria-label="fearRadius value">
       <input type="range" id="fearRadius" min="20" max="400" step="5" value="170"></label>
-    <label>speed <output data-for="hunterSpeed"></output>
+    <label>speed <input class="num" type="number" data-num="hunterSpeed" min="40" max="400" step="5" value="185" aria-label="hunterSpeed value">
       <input type="range" id="hunterSpeed" min="40" max="400" step="5" value="185"></label>
   </fieldset>
 
   <fieldset>
     <legend>world</legend>
-    <label>wall push <output data-for="wall"></output>
-      <input type="range" id="wall" min="0" max="400" step="1" value="260"></label>
+    <label>wall push <input class="num" type="number" data-num="wall" min="0" max="500" step="1" value="340" aria-label="wall value">
+      <input type="range" id="wall" min="0" max="500" step="1" value="340"></label>
+    <label>pixel size <input class="num" type="number" data-num="pixel" min="1" max="6" step="1" value="3" aria-label="pixel value">
+      <input type="range" id="pixel" min="1" max="6" step="1" value="3"></label>
     <label class="check"><input type="checkbox" id="trails" checked> motion trails</label>
     <label class="check"><input type="checkbox" id="showVectors"> force vectors</label>
   </fieldset>

@@ -17,13 +17,14 @@
   const DEFAULTS = {
     preyCount: 12,
     hunterCount: 1,
-    cohesion: 60,
-    separation: 120,
-    alignment: 80,
+    cohesion: 95,
+    separation: 130,
+    alignment: 115,
     fear: 220,
     fearRadius: 170,
-    wall: 260,
+    wall: 340,
     hunterSpeed: 185,
+    pixel: 3,
     showVectors: false,
     trails: true,
   };
@@ -45,12 +46,34 @@
     canvas.width = Math.round(world.w * dpr);
     canvas.height = Math.round(world.h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#07090f';
+    ctx.fillStyle = '#e0e5ed';
     ctx.fillRect(0, 0, world.w, world.h);
   }
 
   const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
   const rand = (a, b) => a + Math.random() * (b - a);
+
+  // Palette lifted from the pixel-art reference: a high-key, foggy blue-grey field with
+  // desaturated slate figures and coral as the single warm accent.
+  const PALETTE = {
+    skyTop: '#e6eaf1',
+    skyBottom: '#ccd4e0',
+    prey: '#5f6b80',
+    preySoft: '#8b95a8',
+    hunter: '#3d8270',
+    hunterSoft: 'rgba(61, 130, 112,',
+    ink: '#3d4553',
+  };
+
+  // Offscreen buffer used only when pixel size > 1: the scene renders small and is blown
+  // up with smoothing off, which is what gives the chunky pixel-art edges.
+  const buf = document.createElement('canvas');
+  const bufCtx = buf.getContext('2d', { alpha: false });
+
+  /** Capture puffs: constant radius, alpha only — no size change. */
+  const flashes = [];
+  const FLASH_T = 0.38;
+  const FADE_T = 0.28;
 
   // ---------------------------------------------------------------- agents
 
@@ -66,6 +89,7 @@
       y: rand(0, world.h),
       vx: Math.cos(a) * speed,
       vy: Math.sin(a) * speed,
+      fade: 0,   // 0->1 ease-in after spawn, so prey appear rather than pop
       // last-frame force components, only used by the debug vector overlay
       fcx: 0, fcy: 0, ffx: 0, ffy: 0, fwx: 0, fwy: 0,
     };
@@ -169,6 +193,15 @@
 
   function step(dt) {
     const S = world.scale;
+
+    // Capture puffs and spawn fades are pure presentation, but they live here so they
+    // advance with simulation time and stay correct when the sim is stepped by hand.
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      flashes[i].t -= dt;
+      if (flashes[i].t <= 0) flashes.splice(i, 1);
+    }
+    for (const p of prey) if (p.fade < 1) p.fade = Math.min(1, p.fade + dt / FADE_T);
+
     const maxSpeed = 170 * S;
     const minSpeed = 45 * S;
     const neighborR = 46 * S;
@@ -281,7 +314,9 @@
       }
       if (eaten) {
         caught++;
+        flashes.push({ x: p.x, y: p.y, t: FLASH_T });
         respawnAtEdge(p);
+        p.fade = 0;
         continue;
       }
       ax += ffx; ay += ffy;
@@ -331,98 +366,151 @@
   // ---------------------------------------------------------------- draw
 
   function draw() {
-    const S = world.scale;
-
-    if (cfg.trails) {
-      ctx.fillStyle = 'rgba(7, 9, 15, 0.30)';
-      ctx.fillRect(0, 0, world.w, world.h);
-    } else {
-      ctx.fillStyle = '#07090f';
-      ctx.fillRect(0, 0, world.w, world.h);
-    }
-
-    // Danger halo under each predator.
-    const fearR = cfg.fearRadius * S;
-    for (const hunter of hunters) {
-      const g = ctx.createRadialGradient(hunter.x, hunter.y, 0, hunter.x, hunter.y, fearR);
-      g.addColorStop(0, 'rgba(255, 77, 109, 0.16)');
-      g.addColorStop(1, 'rgba(255, 77, 109, 0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(hunter.x, hunter.y, fearR, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Prey as heading-aligned darts, sized off the visual scale.
     const V = world.vscale;
+    const px = Math.max(1, cfg.pixel | 0);
+    let g;
+
+    if (px > 1) {
+      // Render small, blow it up with smoothing off -> chunky pixel-art edges.
+      const bw = Math.max(1, Math.round(world.w / px));
+      const bh = Math.max(1, Math.round(world.h / px));
+      if (buf.width !== bw || buf.height !== bh) { buf.width = bw; buf.height = bh; }
+      g = bufCtx;
+      g.setTransform(1 / px, 0, 0, 1 / px, 0, 0);
+    } else {
+      g = ctx;
+    }
+
+    paint(g, V);
+
+    if (px > 1) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(buf, 0, 0, world.w, world.h);
+      ctx.imageSmoothingEnabled = true;
+    }
+  }
+
+  // Everything below draws in world (CSS px) coordinates, so it is identical whether it
+  // lands on the screen directly or in the low-res buffer.
+  function paint(g, V) {
+    // Sky: a soft vertical wash, the high-key foggy field of the reference art.
+    if (cfg.trails) {
+      g.fillStyle = 'rgba(224, 229, 237, 0.34)';
+      g.fillRect(0, 0, world.w, world.h);
+    } else {
+      const sky = g.createLinearGradient(0, 0, 0, world.h);
+      sky.addColorStop(0, PALETTE.skyTop);
+      sky.addColorStop(1, PALETTE.skyBottom);
+      g.fillStyle = sky;
+      g.fillRect(0, 0, world.w, world.h);
+    }
+
+    // Each predator sits in a warm coral haze.
+    const fearR = cfg.fearRadius * world.scale;
+    for (const hunter of hunters) {
+      const grad = g.createRadialGradient(hunter.x, hunter.y, 0, hunter.x, hunter.y, fearR);
+      grad.addColorStop(0, PALETTE.hunterSoft + ' 0.16)');
+      grad.addColorStop(1, PALETTE.hunterSoft + ' 0)');
+      g.fillStyle = grad;
+      g.beginPath();
+      g.arc(hunter.x, hunter.y, fearR, 0, Math.PI * 2);
+      g.fill();
+    }
+
+    // Prey. Fully faded-in ones batch into a single path; the few mid-fade draw
+    // separately so alpha can differ without splitting the batch every frame.
     const len = 9 * V, wid = 3.4 * V;
-    ctx.fillStyle = '#9fe8ff';
-    ctx.beginPath();
-    for (const p of prey) {
+    const dart = (p) => {
       const sp = Math.hypot(p.vx, p.vy) || 1;
       const ux = p.vx / sp, uy = p.vy / sp;
-      const px = -uy, py = ux;
-      ctx.moveTo(p.x + ux * len, p.y + uy * len);
-      ctx.lineTo(p.x - ux * len * 0.6 + px * wid, p.y - uy * len * 0.6 + py * wid);
-      ctx.lineTo(p.x - ux * len * 0.6 - px * wid, p.y - uy * len * 0.6 - py * wid);
-      ctx.closePath();
+      const nx = -uy, ny = ux;
+      g.moveTo(p.x + ux * len, p.y + uy * len);
+      g.lineTo(p.x - ux * len * 0.6 + nx * wid, p.y - uy * len * 0.6 + ny * wid);
+      g.lineTo(p.x - ux * len * 0.6 - nx * wid, p.y - uy * len * 0.6 - ny * wid);
+      g.closePath();
+    };
+
+    g.fillStyle = PALETTE.prey;
+    g.beginPath();
+    for (const p of prey) if (p.fade >= 1) dart(p);
+    g.fill();
+
+    for (const p of prey) {
+      if (p.fade >= 1) continue;
+      g.globalAlpha = p.fade * p.fade;      // ease-in, no scaling
+      g.beginPath();
+      dart(p);
+      g.fill();
     }
-    ctx.fill();
+    g.globalAlpha = 1;
 
-    if (cfg.showVectors) drawVectors(S);
+    // Capture puffs: constant radius, alpha only.
+    for (const f of flashes) {
+      const a = f.t / FLASH_T;
+      g.strokeStyle = PALETTE.hunterSoft + ' ' + Math.min(1, a * 0.9).toFixed(3) + ')';
+      g.lineWidth = 2.6 * V;
+      g.beginPath();
+      g.arc(f.x, f.y, 9 * V, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = PALETTE.hunterSoft + ' ' + Math.min(1, a * 0.65).toFixed(3) + ')';
+      g.beginPath();
+      g.arc(f.x, f.y, 3 * V, 0, Math.PI * 2);
+      g.fill();
+    }
 
-    // Predator bodies.
+    if (cfg.showVectors) drawVectors(g, V);
+
+    // Predators.
     for (const hunter of hunters) {
       const hsp = Math.hypot(hunter.vx, hunter.vy) || 1;
       const hux = hunter.vx / hsp, huy = hunter.vy / hsp;
-      ctx.save();
-      ctx.translate(hunter.x, hunter.y);
-      ctx.rotate(Math.atan2(huy, hux));
-      ctx.fillStyle = '#ff4d6d';
-      ctx.beginPath();
-      ctx.moveTo(20 * V, 0);
-      ctx.lineTo(-12 * V, 10 * V);
-      ctx.lineTo(-6.5 * V, 0);
-      ctx.lineTo(-12 * V, -10 * V);
-      ctx.closePath();
-      ctx.fill();
-      // A ring marks the one the finger is driving, so it's obvious which you grabbed.
+      g.save();
+      g.translate(hunter.x, hunter.y);
+      g.rotate(Math.atan2(huy, hux));
+      g.fillStyle = PALETTE.hunter;
+      g.beginPath();
+      g.moveTo(27 * V, 0);
+      g.lineTo(-16 * V, 13.5 * V);
+      g.lineTo(-8.5 * V, 0);
+      g.lineTo(-16 * V, -13.5 * V);
+      g.closePath();
+      g.fill();
       if (hunter === steered) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.lineWidth = 1.2 * V;
-        ctx.beginPath();
-        ctx.arc(0, 0, 17 * V, 0, Math.PI * 2);
-        ctx.stroke();
+        g.strokeStyle = 'rgba(61, 69, 83, 0.45)';
+        g.lineWidth = 1.2 * V;
+        g.beginPath();
+        g.arc(0, 0, 22 * V, 0, Math.PI * 2);
+        g.stroke();
       }
-      ctx.restore();
+      g.restore();
     }
 
     if (pointer.active) {
-      ctx.strokeStyle = 'rgba(255, 77, 109, 0.55)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(pointer.x, pointer.y, 18 * V, 0, Math.PI * 2);
-      ctx.stroke();
+      g.strokeStyle = PALETTE.hunterSoft + ' 0.5)';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.arc(pointer.x, pointer.y, 18 * V, 0, Math.PI * 2);
+      g.stroke();
     }
   }
 
   // Sampled every 6th prey — drawing all of them is unreadable.
-  function drawVectors(S) {
-    const k = 0.6 / S; // force magnitude -> pixels, tuned to stay readable at the default weights
-    ctx.lineWidth = 1.2 * S;
+  function drawVectors(g, V) {
+    const k = 0.6 / world.scale;
+    g.lineWidth = 1.2 * V;
     for (let i = 0; i < prey.length; i += 6) {
       const p = prey[i];
-      line(p, p.fcx * k, p.fcy * k, 'rgba(90, 209, 255, 0.8)');
-      line(p, p.ffx * k, p.ffy * k, 'rgba(255, 77, 109, 0.85)');
-      line(p, p.fwx * k, p.fwy * k, 'rgba(255, 209, 102, 0.85)');
+      line(p, p.fcx * k, p.fcy * k, 'rgba(95, 107, 128, 0.85)');
+      line(p, p.ffx * k, p.ffy * k, 'rgba(61, 130, 112, 0.9)');
+      line(p, p.fwx * k, p.fwy * k, 'rgba(150, 130, 90, 0.85)');
     }
     function line(p, dx, dy, color) {
       if (!dx && !dy) return;
-      ctx.strokeStyle = color;
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x + dx, p.y + dy);
-      ctx.stroke();
+      g.strokeStyle = color;
+      g.beginPath();
+      g.moveTo(p.x, p.y);
+      g.lineTo(p.x + dx, p.y + dy);
+      g.stroke();
     }
   }
 
@@ -471,24 +559,35 @@
 
   function bindControl(id) {
     const el = document.getElementById(id);
-    const out = panel.querySelector(`output[data-for="${id}"]`);
-    const apply = () => {
-      if (el.type === 'checkbox') {
-        cfg[id] = el.checked;
-      } else {
-        cfg[id] = Number(el.value);
-        if (out) out.textContent = el.value;
-        if (id === 'preyCount') setPreyCount(cfg[id]);
-        if (id === 'hunterCount') setHunterCount(cfg[id]);
-      }
+    const num = panel.querySelector(`[data-num="${id}"]`);   // typed entry, same bounds
+
+    // Single funnel for both widgets: whichever one the user touches, the value is
+    // clamped once and mirrored to the other, so they can never disagree.
+    const sync = (raw) => {
+      if (el.type === 'checkbox') { cfg[id] = el.checked; return; }
+      const v = clamp(Number(raw), Number(el.min), Number(el.max));
+      if (!Number.isFinite(v)) return;
+      el.value = String(v);
+      if (num) num.value = String(v);
+      cfg[id] = v;
+      if (id === 'preyCount') setPreyCount(v);
+      if (id === 'hunterCount') setHunterCount(v);
     };
-    el.addEventListener('input', apply);
-    el._apply = apply;
+
+    el.addEventListener('input', () => sync(el.value));
+    if (num) {
+      // Mid-typing the box can be empty or a partial number; ignore until it parses,
+      // and restore the live value on blur so it never sits blank.
+      num.addEventListener('input', () => { if (num.value.trim() !== '') sync(num.value); });
+      num.addEventListener('blur', () => sync(el.value));
+      num.addEventListener('keydown', (e) => { if (e.key === 'Enter') num.blur(); });
+    }
+    el._apply = () => sync(el.value);
     return el;
   }
 
   const controls = ['preyCount', 'hunterCount', 'cohesion', 'separation', 'alignment', 'fear',
-    'fearRadius', 'wall', 'hunterSpeed', 'showVectors', 'trails'].map(bindControl);
+    'fearRadius', 'wall', 'hunterSpeed', 'pixel', 'showVectors', 'trails'].map(bindControl);
 
   document.getElementById('reset').addEventListener('click', resetAll);
   document.getElementById('defaults').addEventListener('click', () => {
@@ -505,7 +604,7 @@
   document.addEventListener('visibilitychange', () => { last = performance.now(); });
 
   // Debug hook: inspect or drive the sim from the console / an automation tool.
-  window.__flock = { cfg, prey, hunters, world, resetAll, step, draw, get caught() { return caught; } };
+  window.__flock = { cfg, prey, hunters, flashes, world, resetAll, step, draw, get caught() { return caught; } };
 
   // Seed every control from DEFAULTS rather than trusting the markup, so the HTML and the
   // config can't drift — and so the device-derived prey count actually reaches the slider.
