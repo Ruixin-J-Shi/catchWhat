@@ -60,8 +60,8 @@
     skyBottom: '#ccd4e0',
     prey: '#5f6b80',
     preySoft: '#8b95a8',
-    hunter: '#3d8270',
-    hunterSoft: 'rgba(61, 130, 112,',
+    hunter: '#e0838f',
+    hunterSoft: 'rgba(224, 131, 143,',
     ink: '#3d4553',
   };
 
@@ -409,7 +409,7 @@
     const fearR = cfg.fearRadius * world.scale;
     for (const hunter of hunters) {
       const grad = g.createRadialGradient(hunter.x, hunter.y, 0, hunter.x, hunter.y, fearR);
-      grad.addColorStop(0, PALETTE.hunterSoft + ' 0.16)');
+      grad.addColorStop(0, PALETTE.hunterSoft + ' 0.20)');
       grad.addColorStop(1, PALETTE.hunterSoft + ' 0)');
       g.fillStyle = grad;
       g.beginPath();
@@ -501,7 +501,7 @@
     for (let i = 0; i < prey.length; i += 6) {
       const p = prey[i];
       line(p, p.fcx * k, p.fcy * k, 'rgba(95, 107, 128, 0.85)');
-      line(p, p.ffx * k, p.ffy * k, 'rgba(61, 130, 112, 0.9)');
+      line(p, p.ffx * k, p.ffy * k, 'rgba(224, 131, 143, 0.9)');
       line(p, p.fwx * k, p.fwy * k, 'rgba(150, 130, 90, 0.85)');
     }
     function line(p, dx, dy, color) {

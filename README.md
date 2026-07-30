@@ -47,7 +47,7 @@ two hunters is pushed hardest out of the gap.
 ## Look
 
 The palette is sampled from pixel-art references: a high-key blue-grey fog for the field,
-desaturated slate for the prey, and the sea-green of lit windows for the predator. The scene
+desaturated slate for the prey, and a dusty rose for the predator, taken from the sunset reference. The scene
 renders into a small offscreen buffer and is blown up with image smoothing off, which is what
 produces the chunky pixel edges — `pixel size` in the panel is the block size in CSS px, and
 setting it to 1 turns pixelation off entirely and renders crisp.

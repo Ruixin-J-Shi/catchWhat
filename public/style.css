@@ -5,8 +5,8 @@
   --bg: #e0e5ed;
   --ink: #3d4553;
   --dim: #7a8497;
-  --accent: #3d8270;
-  --hunter: #3d8270;
+  --accent: #c96b7a;
+  --hunter: #c96b7a;
   --hair: color-mix(in srgb, var(--ink) 16%, transparent);
   --glass: color-mix(in srgb, #f2f5f9 78%, transparent);
   --pad: clamp(12px, 2.2vw, 22px);
