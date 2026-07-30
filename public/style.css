@@ -1,0 +1,255 @@
+/* catchWhat — one accent, one weight of chrome, everything else is the simulation. */
+
+:root {
+  --bg: #08090d;
+  --ink: #eaeef6;
+  --dim: #6d7789;
+  --accent: #7cd4fd;
+  --hunter: #ff5470;
+  --hair: color-mix(in srgb, var(--ink) 12%, transparent);
+  --glass: color-mix(in srgb, #10131b 82%, transparent);
+  --pad: clamp(12px, 2.2vw, 22px);
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;      /* the canvas owns every gesture */
+}
+
+/* ---------------------------------------------------------------- top bar */
+
+#bar {
+  position: fixed;
+  top: max(var(--pad), env(safe-area-inset-top));
+  left: max(var(--pad), env(safe-area-inset-left));
+  right: max(var(--pad), env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 28px);
+  pointer-events: none;    /* only the button takes input */
+}
+
+#bar h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  color: var(--dim);
+}
+#bar h1 span { color: var(--ink); }
+
+#stats {
+  display: flex;
+  gap: clamp(12px, 3vw, 26px);
+  margin: 0;
+  margin-left: auto;
+}
+#stats div { display: flex; align-items: baseline; gap: 7px; }
+#stats dt { font-size: 11px; letter-spacing: 0.08em; color: var(--dim); }
+#stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-size: 14px;
+  color: var(--ink);
+}
+#stats dd#caught { color: var(--hunter); }
+
+#toggle {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: border-color .18s, background .18s;
+}
+#toggle:hover { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+#toggle[aria-expanded="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+#toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+
+/* ---------------------------------------------------------------- hint */
+
+#hint {
+  position: fixed;
+  left: 50%;
+  bottom: max(var(--pad), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 7px 15px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--dim);
+  background: var(--glass);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity .8s ease;
+}
+#hint.gone { opacity: 0; }
+
+/* ---------------------------------------------------------------- panel */
+
+#panel {
+  position: fixed;
+  display: grid;
+  gap: 18px;
+  background: var(--glass);
+  border: 1px solid var(--hair);
+  backdrop-filter: blur(18px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#panel[hidden] { display: none; }
+
+#panel .grip { display: none; }
+
+#panel fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 13px;
+}
+#panel legend {
+  padding: 0 0 2px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+#panel label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 3px 10px;
+  font-size: 13px;
+  color: var(--dim);
+}
+#panel label.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+#panel output {
+  justify-self: end;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+#panel input[type=range] {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);   /* native track+thumb, nothing to restyle */
+  cursor: pointer;
+}
+#panel input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+#panel .btns { display: flex; gap: 9px; }
+#panel .btns button {
+  flex: 1;
+  padding: 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .18s, color .18s;
+}
+#panel .btns button:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Desktop and up: a card tucked under the toggle. */
+@media (min-width: 700px) {
+  #panel {
+    top: calc(max(var(--pad), env(safe-area-inset-top)) + 50px);
+    right: max(var(--pad), env(safe-area-inset-right));
+    width: 274px;
+    /* Exactly the room between the toggle and the bottom edge — no arbitrary cap, so the
+       panel only scrolls when the window genuinely can't fit it. */
+    max-height: calc(100vh - max(var(--pad), env(safe-area-inset-top)) - 50px - var(--pad));
+    max-height: calc(100dvh - max(var(--pad), env(safe-area-inset-top)) - 50px - var(--pad));
+    padding: 18px;
+    border-radius: var(--radius);
+    animation: card .22s ease both;
+  }
+  @keyframes card { from { opacity: 0; transform: translateY(-6px); } }
+}
+
+/* Phones: a bottom sheet, thumb-reachable, never taller than half the screen. */
+@media (max-width: 699px) {
+  #panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 62vh;
+    max-height: 62dvh;          /* dvh so the mobile URL bar doesn't clip the sheet */
+    padding: 8px 18px calc(20px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 20px 20px 0 0;
+    animation: sheet .26s cubic-bezier(.22,.9,.3,1) both;
+  }
+  #panel .grip {
+    display: block;
+    justify-self: center;
+    width: 34px;
+    height: 4px;
+    margin: 4px 0 2px;
+    background: var(--hair);
+    border-radius: 999px;
+  }
+  #panel input[type=range] { height: 30px; }   /* bigger touch target */
+  #hint { bottom: calc(max(var(--pad), env(safe-area-inset-bottom))); font-size: 11px; }
+  @keyframes sheet { from { transform: translateY(100%); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #panel { animation: none; }
+  #hint { transition: none; }
+}

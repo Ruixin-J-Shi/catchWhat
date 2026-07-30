@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#08090d">
+<meta name="description" content="A flock of prey, one hunter, five forces. An interactive boids simulation.">
+<title>catchWhat — a flock and a hunter</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<header id="bar">
+  <h1>catch<span>What</span></h1>
+  <dl id="stats">
+    <div><dt>fps</dt><dd id="fps">–</dd></div>
+    <div><dt>prey</dt><dd id="count">–</dd></div>
+    <div><dt>caught</dt><dd id="caught">0</dd></div>
+  </dl>
+  <button id="toggle" aria-label="Controls" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+  </button>
+</header>
+
+<p id="hint">drag anywhere to steer the hunter</p>
+
+<section id="panel" hidden aria-label="Simulation controls">
+  <div class="grip" aria-hidden="true"></div>
+
+  <fieldset>
+    <legend>flock</legend>
+    <label>prey <output data-for="preyCount"></output>
+      <input type="range" id="preyCount" min="1" max="500" step="1" value="12"></label>
+    <label>cohesion <output data-for="cohesion"></output>
+      <input type="range" id="cohesion" min="0" max="200" step="1" value="60"></label>
+    <label>separation <output data-for="separation"></output>
+      <input type="range" id="separation" min="0" max="300" step="1" value="120"></label>
+    <label>alignment <output data-for="alignment"></output>
+      <input type="range" id="alignment" min="0" max="200" step="1" value="80"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>predators</legend>
+    <label>count <output data-for="hunterCount"></output>
+      <input type="range" id="hunterCount" min="1" max="6" step="1" value="1"></label>
+    <label>fear <output data-for="fear"></output>
+      <input type="range" id="fear" min="0" max="400" step="1" value="220"></label>
+    <label>fear radius <output data-for="fearRadius"></output>
+      <input type="range" id="fearRadius" min="20" max="400" step="5" value="170"></label>
+    <label>speed <output data-for="hunterSpeed"></output>
+      <input type="range" id="hunterSpeed" min="40" max="400" step="5" value="185"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>world</legend>
+    <label>wall push <output data-for="wall"></output>
+      <input type="range" id="wall" min="0" max="400" step="1" value="260"></label>
+    <label class="check"><input type="checkbox" id="trails" checked> motion trails</label>
+    <label class="check"><input type="checkbox" id="showVectors"> force vectors</label>
+  </fieldset>
+
+  <div class="btns">
+    <button id="reset">reset</button>
+    <button id="defaults">defaults</button>
+  </div>
+</section>
+
+<script src="/sim.js"></script>
+<script>
+  // Live reload is a local-dev affordance only. On a static host (Vercel) there is no
+  // /events endpoint, and an unguarded EventSource would retry forever.
+  if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+    const es = new EventSource('/events');
+    es.addEventListener('reload', () => location.reload());
+  }
+</script>
+</body>
+</html>
