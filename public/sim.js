@@ -23,6 +23,7 @@
     fear: 220,
     fearRadius: 170,
     wall: 340,
+    wallRange: 140,
     hunterSpeed: 185,
     pixel: 3,
     showVectors: false,
@@ -207,7 +208,7 @@
     const neighborR = 46 * S;
     const sepR = 22 * S;
     const fearR = cfg.fearRadius * S;
-    const margin = 70 * S;
+    const margin = cfg.wallRange * S;   // how early prey start turning
     const catchR = 9 * S;
 
     buildGrid(neighborR);
@@ -419,7 +420,9 @@
 
     // Prey. Fully faded-in ones batch into a single path; the few mid-fade draw
     // separately so alpha can differ without splitting the batch every frame.
-    const len = 9 * V, wid = 3.4 * V;
+    // Sized so a dart still covers whole blocks at the default pixel size: below
+    // ~2 buffer px wide it rasterises into the background and vanishes.
+    const len = 18 * V, wid = 6.8 * V;
     const dart = (p) => {
       const sp = Math.hypot(p.vx, p.vy) || 1;
       const ux = p.vx / sp, uy = p.vy / sp;
@@ -450,11 +453,11 @@
       g.strokeStyle = PALETTE.hunterSoft + ' ' + Math.min(1, a * 0.9).toFixed(3) + ')';
       g.lineWidth = 2.6 * V;
       g.beginPath();
-      g.arc(f.x, f.y, 9 * V, 0, Math.PI * 2);
+      g.arc(f.x, f.y, 12 * V, 0, Math.PI * 2);
       g.stroke();
       g.fillStyle = PALETTE.hunterSoft + ' ' + Math.min(1, a * 0.65).toFixed(3) + ')';
       g.beginPath();
-      g.arc(f.x, f.y, 3 * V, 0, Math.PI * 2);
+      g.arc(f.x, f.y, 4 * V, 0, Math.PI * 2);
       g.fill();
     }
 
@@ -469,17 +472,17 @@
       g.rotate(Math.atan2(huy, hux));
       g.fillStyle = PALETTE.hunter;
       g.beginPath();
-      g.moveTo(27 * V, 0);
-      g.lineTo(-16 * V, 13.5 * V);
-      g.lineTo(-8.5 * V, 0);
-      g.lineTo(-16 * V, -13.5 * V);
+      g.moveTo(35 * V, 0);
+      g.lineTo(-21 * V, 17.5 * V);
+      g.lineTo(-11 * V, 0);
+      g.lineTo(-21 * V, -17.5 * V);
       g.closePath();
       g.fill();
       if (hunter === steered) {
         g.strokeStyle = 'rgba(61, 69, 83, 0.45)';
         g.lineWidth = 1.2 * V;
         g.beginPath();
-        g.arc(0, 0, 22 * V, 0, Math.PI * 2);
+        g.arc(0, 0, 28 * V, 0, Math.PI * 2);
         g.stroke();
       }
       g.restore();
@@ -546,10 +549,20 @@
 
   const panel = document.getElementById('panel');
   const toggle = document.getElementById('toggle');
-  toggle.addEventListener('click', () => {
-    panel.hidden = !panel.hidden;
-    toggle.setAttribute('aria-expanded', String(!panel.hidden));
-  });
+  const scrim = document.getElementById('scrim');
+
+  function setPanel(open) {
+    panel.hidden = !open;
+    scrim.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+  }
+  toggle.addEventListener('click', () => setPanel(panel.hidden));
+
+  // The sheet must be dismissable where it lives: tapping the grip, tapping outside it,
+  // or Escape. Requiring a trip back to the corner button is the wrong gesture on a phone.
+  scrim.addEventListener('pointerdown', (e) => { e.preventDefault(); setPanel(false); });
+  panel.querySelector('.grip').addEventListener('click', () => setPanel(false));
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) setPanel(false); });
 
   // The hint has done its job after the first interaction, or after a few seconds.
   const hint = document.getElementById('hint');
@@ -587,7 +600,7 @@
   }
 
   const controls = ['preyCount', 'hunterCount', 'cohesion', 'separation', 'alignment', 'fear',
-    'fearRadius', 'wall', 'hunterSpeed', 'pixel', 'showVectors', 'trails'].map(bindControl);
+    'fearRadius', 'wall', 'wallRange', 'hunterSpeed', 'pixel', 'showVectors', 'trails'].map(bindControl);
 
   document.getElementById('reset').addEventListener('click', resetAll);
   document.getElementById('defaults').addEventListener('click', () => {

@@ -5,8 +5,8 @@
   --bg: #e0e5ed;
   --ink: #3d4553;
   --dim: #7a8497;
-  --accent: #c96b7a;
-  --hunter: #c96b7a;
+  --accent: #5f6b80;   /* menu chrome matches the prey slate, not the predator */
+  --hunter: #5f6b80;
   --hair: color-mix(in srgb, var(--ink) 16%, transparent);
   --glass: color-mix(in srgb, #f2f5f9 78%, transparent);
   --pad: clamp(12px, 2.2vw, 22px);
@@ -77,7 +77,7 @@ html, body {
   font-size: 14px;
   color: var(--ink);
 }
-#stats dd#caught { color: var(--hunter); font-weight: 500; }
+#stats dd#caught { color: var(--ink); font-weight: 500; }
 
 #toggle {
   pointer-events: auto;
@@ -137,6 +137,9 @@ html, body {
 }
 #panel[hidden] { display: none; }
 
+/* Phones only: a tap-anywhere-outside scrim, so the sheet closes where it opened
+   rather than forcing a trip back to the button in the far corner. */
+#scrim { display: none; }
 #panel .grip { display: none; }
 
 #panel fieldset {
@@ -258,13 +261,38 @@ html, body {
     border-radius: 20px 20px 0 0;
     animation: sheet .26s cubic-bezier(.22,.9,.3,1) both;
   }
+  #scrim[hidden] { display: none; }
+  #scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #panel { z-index: 2; }
+  /* The grip is a real button: a fat tap target with a thin visible bar. */
   #panel .grip {
     display: block;
     justify-self: center;
-    width: 34px;
+    width: 64px;
+    height: 22px;
+    padding: 0;
+    margin: 0 0 2px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+  }
+  #panel .grip::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 9px;
+    transform: translateX(-50%);
+    width: 36px;
     height: 4px;
-    margin: 4px 0 2px;
-    background: var(--hair);
+    background: color-mix(in srgb, var(--ink) 28%, transparent);
     border-radius: 999px;
   }
   #panel input[type=range] { height: 30px; }   /* bigger touch target */

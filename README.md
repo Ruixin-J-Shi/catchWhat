@@ -32,7 +32,7 @@ stream on `localhost`, so on a static host it's simply absent rather than retryi
 
 - **drag** — grab the predator nearest your finger and steer it. A white ring marks the one
   you're driving. Release and it goes back to hunting the nearest prey on its own.
-- **☰** — prey count, **predator count (1–6)**, force weights, pixel size, motion trails,
+- **☰** — prey count, **predator count (1–6)**, force weights, wall range, pixel size, motion trails,
   force-vector overlay. Every value can be **dragged or typed** — the number box and the
   slider are two views of the same value and clamp to the same bounds.
 
@@ -65,7 +65,10 @@ Each prey sums five accelerations per frame, then its speed is clamped to a band
 | separation | away from neighbours within ~22px | linear, strongest when closest |
 | alignment | toward the mean heading of neighbours within ~46px | constant |
 | fear | away from the hunter | `(1-d/R)(2-d/R)`, zero beyond the fear radius |
-| walls | inward | linear inside a 70px margin, zero outside |
+| walls | inward | linear inside the `wall range` margin (140 by default), zero outside |
+
+On phones the control panel is a bottom sheet: tap the grip, tap outside it, or press
+Escape to dismiss it where it sits.
 
 Every speed and radius is multiplied by `clamp(min(w,h)/700, 0.5, 1.8)`, so a phone screen
 behaves like a scaled-down desktop rather than a cramped one.
